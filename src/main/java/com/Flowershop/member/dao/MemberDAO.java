@@ -1,0 +1,265 @@
+package com.Flowershop.member.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+
+import com.Flowershop.member.dto.MemberDTO;
+
+public class MemberDAO {
+	
+	public static final int MEMBER_NONEXISTENT = 0;
+	public static final int MEMBER_EXISTENT = 1;
+	public static final int MEMBER_JOIN_FAIL = 0;
+	public static final int MEMBER_JOIN_SUCCESS = 1;
+	public static final int MEMBER_LOGIN_PW_NO_GOOD = 0;
+	public static final int MEMBER_LOGIN_SUCCESS = 1;
+	public static final int MEMBER_LOGIN_IS_NOT = -1;
+private static MemberDAO instance = new MemberDAO(); //클래스 안에서 밖에 못쓰지만 안에서는 다 쓰일 수 있는
+	public MemberDAO() {
+		// TODO Auto-generated constructor stub
+	}
+	
+	public static MemberDAO getInstance() {
+		return instance;
+	}
+	
+	public int insertMember(MemberDTO dto) {
+		int ri=0;
+		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		String query = "insert into memberex values (?,?,?,?,?,?)";
+		//ResultSet rs = null;
+		
+		
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(query);
+			
+			pstmt.setString(1, dto.getId());
+			pstmt.setString(2, dto.getPw());
+			pstmt.setString(3, dto.getName());
+			pstmt.setString(4, dto.getEmail());
+			pstmt.setString(5, dto.getAddress());
+			pstmt.setTimestamp(6, dto.getRdate());
+			
+			pstmt.executeUpdate();
+			ri = MemberDAO.MEMBER_JOIN_SUCCESS;	
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				pstmt.close();
+				conn.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
+		
+		return ri;
+	}
+	
+	
+	public int confirmId(String id) {
+		int ri = 0;
+		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String query = "select id from memberex where id = ?";
+				
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(query);
+			
+			pstmt.setString(1, id);
+			rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				ri = MemberDAO.MEMBER_EXISTENT;
+			} else {
+				ri = MemberDAO.MEMBER_NONEXISTENT;
+			}
+			
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				pstmt.close();
+				conn.close();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
+		return ri;
+	}
+	
+	public int userCheck(String id, String pw) {
+		int ri=0;
+		String dbPw;//DB에서 가져온 password
+		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String query = "select pw from memberex where id = ?";
+				
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(query);
+			
+			pstmt.setString(1, id);
+			rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				
+				dbPw = rs.getString("pw");
+				
+				if(dbPw.equals(pw)) {
+					ri = MemberDAO.MEMBER_LOGIN_SUCCESS;//로그인 성공 1
+				} else {
+					ri = MemberDAO.MEMBER_LOGIN_PW_NO_GOOD;// 아이디는 있으나 비번이 틀림 0
+				}			
+			
+			
+			} else {
+				ri = MemberDAO.MEMBER_LOGIN_IS_NOT;// 아이디가 없음. 회원이 아님 -1
+			}
+			
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				pstmt.close();
+				conn.close();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		return ri;
+	}
+	
+	public MemberDTO getMember(String id) {
+		
+				
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String query = "select * from memberex where id = ?";
+		MemberDTO dto = new MemberDTO();
+				
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(query);
+			
+			pstmt.setString(1, id);
+			rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				dto.setId(rs.getString("id"));
+				dto.setPw(rs.getString("pw"));
+				dto.setName(rs.getString("name"));
+				dto.setEmail(rs.getString("email"));
+				dto.setAddress(rs.getString("address"));
+				dto.setRdate(rs.getTimestamp("rdate"));
+			}
+			
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				pstmt.close();
+				conn.close();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		return dto;
+	}
+	
+	public int updateMember(MemberDTO dto) {
+		int ri = 0;
+		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		String query = "update memberex set pw=?, email=?, address=? where id=?";		
+		
+		
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(query);
+			
+			//pstmt.setString(1, dto.getId());
+			pstmt.setString(1, dto.getPw());
+			//pstmt.setString(3, dto.getName());
+			pstmt.setString(2, dto.getEmail());
+			pstmt.setString(3, dto.getAddress());
+			pstmt.setString(4, dto.getId());
+			
+			ri = pstmt.executeUpdate();	//회원정보수정에 성공하면 ri=1 로 변경됨
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				pstmt.close();
+				conn.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}		
+		
+		return ri;
+		
+	}
+	
+	
+	
+	
+	private Connection getConnection() {
+		
+		Context context = null;
+		DataSource dataSource = null; 
+		Connection conn = null;
+		
+		try {
+			context = new InitialContext();
+			dataSource = (DataSource)context.lookup("java:comp/env/jdbc/Oracle11g");
+			conn = dataSource.getConnection();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+				
+		return conn;
+	}
+}
